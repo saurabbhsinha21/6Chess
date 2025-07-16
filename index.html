@@ -214,6 +214,7 @@
         <canvas id="webcam-canvas" class="hidden"></canvas>
         <div class="mt-4 flex gap-4">
             <button id="capture-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-full shadow-lg">Capture</button>
+            <button id="switch-camera-btn" class="hidden bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-full shadow-lg">Switch</button>
             <button id="cancel-webcam-btn" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-full shadow-lg">Cancel</button>
         </div>
     </div>
@@ -252,6 +253,7 @@
         const webcamStream = document.getElementById('webcam-stream');
         const webcamCanvas = document.getElementById('webcam-canvas');
         const captureBtn = document.getElementById('capture-btn');
+        const switchCameraBtn = document.getElementById('switch-camera-btn');
         const cancelWebcamBtn = document.getElementById('cancel-webcam-btn');
 
         // --- Game State ---
@@ -264,6 +266,8 @@
         let blackScore = 0;
         let gameOver = true;
         let activeStream = null;
+        let videoDevices = [];
+        let currentCameraIndex = 0;
 
         // --- Setup State ---
         let setupBoardState = {};
@@ -767,18 +771,55 @@
             }
         }
         
+        async function getCameraStream(deviceId = null) {
+            if (activeStream) {
+                activeStream.getTracks().forEach(track => track.stop());
+            }
+
+            const constraints = {
+                video: {
+                    deviceId: deviceId ? { exact: deviceId } : undefined,
+                    facingMode: deviceId ? undefined : { ideal: 'environment' }
+                }
+            };
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                activeStream = stream;
+                webcamStream.srcObject = stream;
+                if (!deviceId) {
+                    await populateCameraList();
+                }
+            } catch (err) {
+                console.error("Error accessing webcam:", err);
+                alert("Could not access the webcam. Please ensure you have a webcam and have granted permission.");
+                stopWebcam();
+            }
+        }
+
+        async function populateCameraList() {
+            try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                videoDevices = devices.filter(device => device.kind === 'videoinput');
+                if (videoDevices.length > 1) {
+                    switchCameraBtn.classList.remove('hidden');
+                    const currentStreamTrack = activeStream.getVideoTracks()[0];
+                    const currentDeviceId = currentStreamTrack.getSettings().deviceId;
+                    currentCameraIndex = videoDevices.findIndex(device => device.deviceId === currentDeviceId);
+                    if (currentCameraIndex === -1) currentCameraIndex = 0;
+                } else {
+                    switchCameraBtn.classList.add('hidden');
+                }
+            } catch (err) {
+                console.error("Could not enumerate devices:", err);
+            }
+        }
+        
         async function startWebcam() {
             if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                try {
-                    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                    activeStream = stream;
-                    webcamStream.srcObject = stream;
-                    webcamModal.style.display = 'flex';
-                    document.body.classList.add('modal-open');
-                } catch (err) {
-                    console.error("Error accessing webcam:", err);
-                    alert("Could not access the webcam. Please ensure you have a webcam and have granted permission.");
-                }
+                webcamModal.style.display = 'flex';
+                document.body.classList.add('modal-open');
+                await getCameraStream();
             } else {
                 alert("Your browser does not support webcam access.");
             }
@@ -787,11 +828,18 @@
         function stopWebcam() {
             if (activeStream) {
                 activeStream.getTracks().forEach(track => track.stop());
+                activeStream = null;
             }
             webcamModal.style.display = 'none';
-            // Only remove the class if the main setup modal is also not open
             if (setupModal.classList.contains('opacity-0')) {
                 document.body.classList.remove('modal-open');
+            }
+        }
+        
+        function switchCamera() {
+            if (videoDevices.length > 1) {
+                currentCameraIndex = (currentCameraIndex + 1) % videoDevices.length;
+                getCameraStream(videoDevices[currentCameraIndex].deviceId);
             }
         }
 
@@ -815,6 +863,8 @@
             stopWebcam();
             getFenFromImage(base64ImageData);
         });
+        
+        switchCameraBtn.addEventListener('click', switchCamera);
         
         cancelWebcamBtn.addEventListener('click', stopWebcam);
 
