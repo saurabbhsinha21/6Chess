@@ -717,7 +717,7 @@
             setupControls.classList.add('hidden');
             loadingIndicator.classList.remove('hidden');
 
-            const prompt = "Analyze the chessboard in this image from white's perspective. Provide the board state as a single FEN string and nothing else. Example: r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3";
+            const prompt = "Analyze the chessboard in this image. Respond with the FEN string for the board state ONLY. Do not include any other text, explanations, or markdown formatting like ```fen ... ```. Just the FEN string.";
             const payload = {
                 contents: [{
                     role: "user",
@@ -736,17 +736,30 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
+
+                if (!response.ok) {
+                    throw new Error(`API request failed with status ${response.status}`);
+                }
+
                 const result = await response.json();
                 
-                if (result.candidates && result.candidates[0].content.parts[0].text) {
-                    const fen = result.candidates[0].content.parts[0].text.trim().split('\n').pop();
-                    updateBoardFromFen(fen);
+                if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts[0].text) {
+                    const rawText = result.candidates[0].content.parts[0].text;
+                    // Regex to find a FEN string in the response
+                    const fenRegex = /([rnbqkp1-8]+\/){7}([rnbqkp1-8]+)\s[wb]\s(-|K?Q?k?q?)\s(-|[a-h][36])\s\d+\s\d+/i;
+                    const match = rawText.match(fenRegex);
+
+                    if (match) {
+                        updateBoardFromFen(match[0]);
+                    } else {
+                        throw new Error("Could not find a valid FEN string in the AI's response.");
+                    }
                 } else {
-                    throw new Error("Could not parse FEN from image.");
+                    throw new Error("The AI's response was empty or in an unexpected format.");
                 }
             } catch (error) {
                 console.error("Error setting up board from image:", error);
-                alert("Could not set up board from image. Please try again or set it up manually.");
+                alert(`Image analysis failed: ${error.message}\nPlease try a clearer image or set up the board manually.`);
             } finally {
                 loadingIndicator.classList.add('hidden');
                 setupControls.classList.remove('hidden');
@@ -755,6 +768,7 @@
 
         function updateBoardFromFen(fen) {
             try {
+                // chess.js validation is strict, so we create a temporary instance
                 const tempChess = new Chess(fen);
                 setupBoardState = {};
                 tempChess.board().forEach((row, rowIndex) => {
@@ -767,7 +781,8 @@
                 });
                 renderSetupBoard();
             } catch (e) {
-                alert("The AI returned an invalid board position (FEN). Please try another image or set up the board manually.");
+                console.error("Invalid FEN received:", fen, e);
+                alert("The AI returned an invalid board position. Please try another image or set up the board manually.");
             }
         }
         
