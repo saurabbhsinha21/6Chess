@@ -201,7 +201,8 @@
                     </div>
                     <div id="loading-indicator" class="hidden w-full h-full flex flex-col items-center justify-center">
                         <div class="spinner"></div>
-                        <p class="mt-4 text-lg text-yellow-300">Analyzing Image...</p>
+                        <p id="loading-text" class="mt-4 text-lg text-yellow-300">Analyzing Image...</p>
+                        <button id="retry-analysis-btn" class="hidden mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">Try Again</button>
                     </div>
                 </div>
             </div>
@@ -247,6 +248,8 @@
         const randomizeBtn = document.getElementById('randomize-btn');
         const cancelSetupBtn = document.getElementById('cancel-setup-btn');
         const loadingIndicator = document.getElementById('loading-indicator');
+        const loadingText = document.getElementById('loading-text');
+        const retryAnalysisBtn = document.getElementById('retry-analysis-btn');
         const setupControls = document.getElementById('setup-controls');
         
         // Webcam elements
@@ -269,6 +272,7 @@
         let activeStream = null;
         let videoDevices = [];
         let currentCameraIndex = 0;
+        let lastImageCapture = null;
 
         // --- Setup State ---
         let setupBoardState = {};
@@ -716,6 +720,7 @@
         }
         
         async function getFenFromImage(base64ImageData) {
+            lastImageCapture = base64ImageData; // Save for retry
             const apiKey = apiKeyInput.value;
             if (!apiKey) {
                 alert("Please enter your Google AI API key to use this feature.");
@@ -724,8 +729,10 @@
 
             setupControls.classList.add('hidden');
             loadingIndicator.classList.remove('hidden');
+            loadingText.textContent = "Analyzing Image...";
+            retryAnalysisBtn.classList.add('hidden');
 
-            const prompt = "Analyze the chessboard in this image. Your task is to identify only the solid, filled-in chess pieces on the board. Ignore any empty squares, highlighted squares, or piece outlines. Respond with the FEN string for the board state ONLY. Do not include any other text, explanations, or markdown formatting. Just the FEN string.";
+            const prompt = "You are a Chess Position Recognition Expert. Your task is to analyze the provided image of a chessboard and generate the corresponding Forsyth-Edwards Notation (FEN) string. **Instructions:** 1. **Grid:** The board is an 8x8 grid. The bottom-left square is 'a1'. The bottom-right is 'h1'. 2. **Pieces:** Identify EVERY solid, filled-in chess piece on the board. 3. **Ignore:** You MUST ignore any highlighted squares, arrows, circles, piece outlines, or any other markings that are not actual, solid pieces. 4. **Accuracy:** The position of each piece must be exact. Double-check your work. 5. **Output:** Provide ONLY the FEN string and nothing else. Do not include any text, explanations, or markdown formatting. Just the raw FEN string.";
             const payload = {
                 contents: [{
                     role: "user",
@@ -758,6 +765,8 @@
 
                     if (match) {
                         updateBoardFromFen(match[0]);
+                        loadingIndicator.classList.add('hidden');
+                        setupControls.classList.remove('hidden');
                     } else {
                         throw new Error("Could not find a valid FEN string in the AI's response.");
                     }
@@ -766,10 +775,8 @@
                 }
             } catch (error) {
                 console.error("Error setting up board from image:", error);
-                alert(`Image analysis failed: ${error.message}\nPlease try a clearer image or set up the board manually.`);
-            } finally {
-                loadingIndicator.classList.add('hidden');
-                setupControls.classList.remove('hidden');
+                loadingText.textContent = `Analysis failed: ${error.message}`;
+                retryAnalysisBtn.classList.remove('hidden');
             }
         }
 
@@ -883,6 +890,12 @@
             const base64ImageData = webcamCanvas.toDataURL('image/jpeg').split(',')[1];
             stopWebcam();
             getFenFromImage(base64ImageData);
+        });
+        
+        retryAnalysisBtn.addEventListener('click', () => {
+            if (lastImageCapture) {
+                getFenFromImage(lastImageCapture);
+            }
         });
         
         switchCameraBtn.addEventListener('click', switchCamera);
