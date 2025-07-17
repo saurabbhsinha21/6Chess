@@ -725,7 +725,7 @@
             setupControls.classList.add('hidden');
             loadingIndicator.classList.remove('hidden');
 
-            const prompt = "Analyze the chessboard in this image. Respond with the FEN string for the board state ONLY. Do not include any other text, explanations, or markdown formatting like ```fen ... ```. Just the FEN string.";
+            const prompt = "Analyze the chessboard in this image. Your task is to identify only the solid, filled-in chess pieces on the board. Ignore any empty squares, highlighted squares, or piece outlines. Respond with the FEN string for the board state ONLY. Do not include any other text, explanations, or markdown formatting. Just the FEN string.";
             const payload = {
                 contents: [{
                     role: "user",
