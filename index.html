@@ -22,7 +22,7 @@
             grid-template-columns: repeat(8, 1fr);
             grid-template-rows: repeat(8, 1fr);
             width: 100%;
-            max-width: 600px; /* Max size for large screens */
+            /* max-width: 600px;  Let the wrapper control the size */
             aspect-ratio: 1 / 1;
             border: 2px solid #4a5568; /* gray-700 */
             border-radius: 0.5rem;
@@ -99,7 +99,12 @@
             <h1 class="text-3xl font-bold mb-2 text-center">6-Move Chess Challenge</h1>
             <div id="game-status" class="h-8 mb-2 text-xl font-semibold text-yellow-300">Setup a new game to begin!</div>
             
-            <div id="chess-board" class="chess-board shadow-2xl"></div>
+            <div class="grid grid-cols-[auto_1fr] grid-rows-[1fr_auto] gap-x-2 gap-y-1 w-full max-w-[600px]">
+                <div id="main-rank-labels" class="flex flex-col justify-around text-center text-gray-400 text-sm font-mono"></div>
+                <div id="chess-board" class="chess-board shadow-2xl col-start-2"></div>
+                <div></div> <!-- empty corner -->
+                <div id="main-file-labels" class="flex justify-around text-center text-gray-400 text-sm font-mono col-start-2"></div>
+            </div>
 
             <div class="w-full mt-4 flex justify-center">
                 <button id="new-game-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105">
@@ -157,7 +162,12 @@
             <div class="flex flex-col md:flex-row gap-6">
                 <!-- Setup Board -->
                 <div class="flex-grow">
-                    <div id="setup-board" class="chess-board border-gray-600"></div>
+                     <div class="grid grid-cols-[auto_1fr] grid-rows-[1fr_auto] gap-x-2 gap-y-1 w-full">
+                        <div id="setup-rank-labels" class="flex flex-col justify-around text-center text-gray-400 text-sm font-mono"></div>
+                        <div id="setup-board" class="chess-board border-gray-600 col-start-2"></div>
+                        <div></div> <!-- empty corner -->
+                        <div id="setup-file-labels" class="flex justify-around text-center text-gray-400 text-sm font-mono col-start-2"></div>
+                    </div>
                 </div>
 
                 <!-- Controls -->
@@ -464,6 +474,7 @@
             document.body.classList.add('modal-open');
             updateBoardFromFen('8/8/8/8/8/8/8/8 w - - 0 1'); // Start with an empty board
             renderSetupBoard();
+            populateLabels('setup-rank-labels', 'setup-file-labels');
             setupModal.classList.remove('opacity-0', 'pointer-events-none');
             modalContent.classList.remove('scale-95');
         }
@@ -507,7 +518,6 @@
                 renderSetupBoard();
             } catch (e) {
                 alert("The selected preset has an invalid FEN. Please choose another.");
-                positionSelector.value = "";
             }
         }
         
@@ -594,6 +604,31 @@
             }
         }
 
+        function populateLabels(rankId, fileId) {
+            const rankContainer = document.getElementById(rankId);
+            const fileContainer = document.getElementById(fileId);
+            if (!rankContainer || !fileContainer) return;
+
+            rankContainer.innerHTML = '';
+            fileContainer.innerHTML = '';
+
+            const ranks = '87654321';
+            ranks.split('').forEach(r => {
+                const label = document.createElement('div');
+                label.className = 'h-full flex items-center justify-center';
+                label.textContent = r;
+                rankContainer.appendChild(label);
+            });
+
+            const files = 'abcdefgh';
+            files.split('').forEach(f => {
+                const label = document.createElement('div');
+                label.className = 'w-full text-center';
+                label.textContent = f;
+                fileContainer.appendChild(label);
+            });
+        }
+
         // --- Event Listeners ---
         newGameBtn.addEventListener('click', showSetupModal);
         cancelSetupBtn.addEventListener('click', hideSetupModal);
@@ -658,6 +693,7 @@
 
         // --- Initial Load ---
         renderBoard();
+        populateLabels('main-rank-labels', 'main-file-labels');
         gameStatusElement.textContent = 'Click "Setup New Game" to begin!';
     </script>
 </body>
