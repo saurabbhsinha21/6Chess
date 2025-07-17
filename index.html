@@ -777,7 +777,11 @@
                         throw new Error("Could not find a valid FEN string in the AI's response.");
                     }
                 } else {
-                    throw new Error("The AI's response was empty or in an unexpected format.");
+                    let errorMessage = "The AI's response was empty or in an unexpected format.";
+                    if(result.promptFeedback && result.promptFeedback.blockReason){
+                        errorMessage += ` Reason: ${result.promptFeedback.blockReason}`;
+                    }
+                    throw new Error(errorMessage);
                 }
             } catch (error) {
                 console.error("Error setting up board from image:", error);
