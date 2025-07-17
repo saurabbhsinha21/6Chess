@@ -58,30 +58,35 @@
             transition: transform 0.25s ease;
         }
         
-        /* Button Style */
-        .control-btn {
-            transition: background-color 0.2s, color 0.2s, border-color 0.2s;
-        }
-        .active-btn {
-            background-color: #3b82f6 !important; /* blue-500 */
-            color: #ffffff !important;
-            border-color: #3b82f6 !important;
-        }
-        .active-color-btn {
-            background-color: #4f46e5 !important; /* indigo-600 */
-            color: #ffffff !important;
-        }
-        .spinner {
-            border: 4px solid rgba(255, 255, 255, 0.3);
+        /* Radial Menu Styles */
+        #radial-menu {
+            position: fixed;
+            width: 150px;
+            height: 150px;
             border-radius: 50%;
-            border-top: 4px solid #fff;
-            width: 24px;
-            height: 24px;
-            animation: spin 1s linear infinite;
+            pointer-events: none;
+            z-index: 100;
+            display: none;
         }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        .radial-item {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background-color: rgba(42, 50, 66, 0.8);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            cursor: pointer;
+            pointer-events: all;
+            transition: transform 0.1s, background-color 0.1s;
+            border: 2px solid transparent;
+        }
+        .radial-item.highlighted {
+            background-color: #4f46e5;
+            transform: scale(1.2);
+            border-color: #fff;
         }
     </style>
 </head>
@@ -146,7 +151,8 @@
     <!-- Board Setup Modal -->
     <div id="setup-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 opacity-0 pointer-events-none">
         <div id="modal-content" class="bg-gray-800 rounded-2xl shadow-2xl p-8 w-full max-w-4xl transform scale-95 overflow-y-auto max-h-full">
-            <h2 class="text-3xl font-bold text-center mb-6">Setup Your Board</h2>
+            <h2 class="text-3xl font-bold text-center mb-6">Rapid Board Setup</h2>
+            <p class="text-center text-gray-400 mb-4">Press and hold on a square, then drag to a piece to place it.</p>
             
             <div class="flex flex-col md:flex-row gap-6">
                 <!-- Setup Board -->
@@ -154,72 +160,30 @@
                     <div id="setup-board" class="chess-board border-gray-600"></div>
                 </div>
 
-                <!-- Piece Palette & Controls -->
+                <!-- Controls -->
                 <div class="w-full md:w-56 flex-shrink-0">
-                    <div id="setup-controls">
-                        <div class="space-y-4">
-                             <div>
-                                <h3 class="text-xl font-semibold mb-2">API Key</h3>
-                                <div class="flex flex-col gap-2">
-                                     <input type="password" id="api-key-input" class="bg-gray-700 text-white rounded-lg p-2 text-sm" placeholder="Enter Google AI API Key">
-                                     <button id="save-api-key-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-1 px-2 rounded-lg text-sm">Save Key</button>
-                                </div>
-                            </div>
-                            <div>
-                                <h3 class="text-xl font-semibold mb-2">1. Place or Scan</h3>
-                                <div class="grid grid-cols-2 gap-2">
-                                    <button id="image-setup-btn" class="control-btn bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center gap-2">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
-                                        Webcam
-                                    </button>
-                                     <button id="randomize-btn" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg">Random</button>
-                                </div>
-                                <div id="piece-palette" class="grid grid-cols-4 gap-2 bg-gray-700 p-3 rounded-lg mt-2"></div>
-                            </div>
-                            <div>
-                                <h3 class="text-xl font-semibold mb-2">2. Adjust</h3>
-                                <button id="change-pos-btn" class="control-btn w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg border-2 border-transparent">
-                                    Change Position
-                                </button>
-                            </div>
-                            <div>
-                                <h3 class="text-xl font-semibold mb-2">3. Play As</h3>
-                                <div id="color-selector" class="flex bg-gray-900 rounded-lg p-1">
-                                    <button data-color="w" class="color-selector-btn w-1/2 py-2 rounded-md text-gray-300 active-color-btn">White</button>
-                                    <button data-color="b" class="color-selector-btn w-1/2 py-2 rounded-md text-gray-300">Black</button>
-                                </div>
+                    <div id="setup-controls" class="space-y-6">
+                        <div>
+                            <h3 class="text-xl font-semibold mb-2">Play As</h3>
+                            <div id="color-selector" class="flex bg-gray-900 rounded-lg p-1">
+                                <button data-color="w" class="color-selector-btn w-1/2 py-2 rounded-md text-gray-300 active-color-btn">White</button>
+                                <button data-color="b" class="color-selector-btn w-1/2 py-2 rounded-md text-gray-300">Black</button>
                             </div>
                         </div>
-                        <div class="mt-6 space-y-3">
+
+                        <div class="space-y-3">
                             <button id="start-game-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg transition-transform transform hover:scale-105">Start Game</button>
-                            <div class="grid grid-cols-2 gap-2">
-                                <button id="clear-board-btn" class="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded-lg">Clear</button>
-                                <button id="reset-standard-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">Standard</button>
-                            </div>
+                            <button id="clear-board-btn" class="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded-lg">Clear Board</button>
+                             <button id="reset-standard-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">Standard Position</button>
                             <button id="cancel-setup-btn" class="w-full bg-red-600 hover:red-700 text-white font-bold py-2 px-4 rounded-lg mt-2">Cancel</button>
                         </div>
-                    </div>
-                    <div id="loading-indicator" class="hidden w-full h-full flex flex-col items-center justify-center">
-                        <div class="spinner"></div>
-                        <p id="loading-text" class="mt-4 text-lg text-yellow-300">Analyzing Image...</p>
-                        <button id="retry-analysis-btn" class="hidden mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">Try Again</button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
     
-    <!-- Webcam Modal -->
-    <div id="webcam-modal" class="fixed inset-0 bg-black bg-opacity-80 flex-col items-center justify-center p-4 z-50 hidden">
-        <video id="webcam-stream" class="w-full max-w-3xl rounded-lg" autoplay playsinline></video>
-        <canvas id="webcam-canvas" class="hidden"></canvas>
-        <div class="mt-4 flex gap-4">
-            <button id="capture-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-full shadow-lg">Capture</button>
-            <button id="switch-camera-btn" class="hidden bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-full shadow-lg">Switch</button>
-            <button id="cancel-webcam-btn" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-full shadow-lg">Cancel</button>
-        </div>
-    </div>
-
+    <div id="radial-menu"></div>
 
     <script>
         // --- DOM Elements ---
@@ -236,30 +200,13 @@
         // Modal elements
         const setupModal = document.getElementById('setup-modal');
         const modalContent = document.getElementById('modal-content');
-        const piecePalette = document.getElementById('piece-palette');
-        const apiKeyInput = document.getElementById('api-key-input');
-        const saveApiKeyBtn = document.getElementById('save-api-key-btn');
-        const changePosBtn = document.getElementById('change-pos-btn');
-        const imageSetupBtn = document.getElementById('image-setup-btn');
         const colorSelector = document.getElementById('color-selector');
         const startGameBtn = document.getElementById('start-game-btn');
         const clearBoardBtn = document.getElementById('clear-board-btn');
         const resetStandardBtn = document.getElementById('reset-standard-btn');
-        const randomizeBtn = document.getElementById('randomize-btn');
         const cancelSetupBtn = document.getElementById('cancel-setup-btn');
-        const loadingIndicator = document.getElementById('loading-indicator');
-        const loadingText = document.getElementById('loading-text');
-        const retryAnalysisBtn = document.getElementById('retry-analysis-btn');
-        const setupControls = document.getElementById('setup-controls');
+        const radialMenu = document.getElementById('radial-menu');
         
-        // Webcam elements
-        const webcamModal = document.getElementById('webcam-modal');
-        const webcamStream = document.getElementById('webcam-stream');
-        const webcamCanvas = document.getElementById('webcam-canvas');
-        const captureBtn = document.getElementById('capture-btn');
-        const switchCameraBtn = document.getElementById('switch-camera-btn');
-        const cancelWebcamBtn = document.getElementById('cancel-webcam-btn');
-
         // --- Game State ---
         let chess = new Chess();
         let playerColor = 'w';
@@ -269,16 +216,10 @@
         let whiteScore = 0;
         let blackScore = 0;
         let gameOver = true;
-        let activeStream = null;
-        let videoDevices = [];
-        let currentCameraIndex = 0;
-        let lastImageCapture = null;
 
         // --- Setup State ---
         let setupBoardState = {};
-        let selectedPalettePiece = null;
-        let movingPieceInfo = null;
-        let isRepositioning = false;
+        let activeRadialTarget = null;
 
         // --- Constants ---
         const PIECE_VALUES = { 'p': 1, 'n': 3, 'b': 3, 'r': 5, 'q': 9, 'k': 900 };
@@ -286,9 +227,10 @@
             'wP': '♙', 'wN': '♘', 'wB': '♗', 'wR': '♖', 'wQ': '♕', 'wK': '♔',
             'bP': '♟', 'bN': '♞', 'bB': '♝', 'bR': '♜', 'bQ': '♛', 'bK': '♚'
         };
-        const PALETTE_PIECES = [
-            'wK', 'wQ', 'wR', 'wB', 'wN', 'wP',
-            'bK', 'bQ', 'bR', 'bB', 'bN', 'bP'
+        const RADIAL_PIECES = [
+            'wP', 'wN', 'wB', 'wR', 'wQ', 'wK',
+            'bP', 'bN', 'bB', 'bR', 'bQ', 'bK',
+            null // For eraser
         ];
 
         // --- Chess Logic ---
@@ -520,14 +462,10 @@
 
         function showSetupModal() {
             document.body.classList.add('modal-open');
-            initPalette();
-            setupBoardState = {};
+            updateBoardFromFen('8/8/8/8/8/8/8/8 w - - 0 1'); // Start with an empty board
             renderSetupBoard();
             setupModal.classList.remove('opacity-0', 'pointer-events-none');
             modalContent.classList.remove('scale-95');
-            loadingIndicator.classList.add('hidden');
-            setupControls.classList.remove('hidden');
-            apiKeyInput.value = localStorage.getItem('googleAiApiKey') || '';
         }
 
         function hideSetupModal() {
@@ -536,112 +474,43 @@
             modalContent.classList.add('scale-95');
         }
 
-        function initPalette() {
-            piecePalette.innerHTML = '';
-            const eraser = document.createElement('div');
-            eraser.className = 'square light cursor-pointer flex items-center justify-center text-red-500 text-3xl';
-            eraser.innerHTML = '×';
-            eraser.addEventListener('click', () => selectPalettePiece(null));
-            piecePalette.appendChild(eraser);
-
-            PALETTE_PIECES.forEach(pieceKey => {
-                const pieceDiv = document.createElement('div');
-                pieceDiv.className = 'square dark cursor-pointer';
-                pieceDiv.innerHTML = `<span class="piece ${pieceKey.startsWith('w') ? 'white' : 'black'}">${PIECE_UNICODE[pieceKey]}</span>`;
-                pieceDiv.addEventListener('click', () => selectPalettePiece(pieceKey));
-                piecePalette.appendChild(pieceDiv);
-            });
-        }
-
         function renderSetupBoard() {
             setupBoardElement.innerHTML = '';
             for (let i = 0; i < 8; i++) {
                 for (let j = 0; j < 8; j++) {
                     const squareEl = document.createElement('div');
                     const squareName = 'abcdefgh'[j] + (8 - i);
-                    squareEl.className = `square ${(i + j) % 2 === 0 ? 'light' : 'dark'} cursor-pointer`;
-                    
-                    if (movingPieceInfo && movingPieceInfo.square === squareName) {
-                        squareEl.classList.add('selected');
-                    }
+                    squareEl.className = `square ${(i + j) % 2 === 0 ? 'light' : 'dark'}`;
+                    squareEl.dataset.square = squareName;
                     
                     if (setupBoardState[squareName]) {
                         const pieceKey = setupBoardState[squareName];
                         squareEl.innerHTML = `<span class="piece ${pieceKey.startsWith('w') ? 'white' : 'black'}">${PIECE_UNICODE[pieceKey]}</span>`;
                     }
-
-                    squareEl.addEventListener('click', () => onSetupSquareClick(squareName));
                     setupBoardElement.appendChild(squareEl);
                 }
             }
         }
-
-        function selectPalettePiece(pieceKey) {
-            setRepositioning(false);
-            movingPieceInfo = null;
-            selectedPalettePiece = pieceKey;
-            if (pieceKey) {
-                selectedPieceDisplay.innerHTML = `Selected: <span class="text-2xl ml-2 piece ${pieceKey.startsWith('w') ? 'white' : 'black'}">${PIECE_UNICODE[pieceKey]}</span>`;
-            } else {
-                selectedPieceDisplay.innerHTML = 'Selected: <span class="text-2xl ml-2 text-red-500">Eraser</span>';
-            }
-            renderSetupBoard();
-        }
-
-        function setRepositioning(active) {
-            isRepositioning = active;
-            if (active) {
-                changePosBtn.classList.add('active-btn');
-                selectedPalettePiece = null;
-                movingPieceInfo = null;
-                selectedPieceDisplay.innerHTML = 'Select a piece to move';
-            } else {
-                changePosBtn.classList.remove('active-btn');
-            }
-        }
-
-        function onSetupSquareClick(squareName) {
-            if (isRepositioning) {
-                if (movingPieceInfo) {
-                    const originalSquare = movingPieceInfo.square;
-                    if (originalSquare === squareName) {
-                        movingPieceInfo = null;
-                        selectedPieceDisplay.innerHTML = 'Select a piece to move';
-                    }
-                    else if (!setupBoardState[squareName]) {
-                        setupBoardState[squareName] = movingPieceInfo.pieceKey;
-                        delete setupBoardState[originalSquare];
-                        movingPieceInfo = null;
-                        selectedPieceDisplay.innerHTML = 'Select a piece to move';
-                    }
-                } 
-                else if (setupBoardState[squareName]) {
-                    movingPieceInfo = { square: squareName, pieceKey: setupBoardState[squareName] };
-                    const pieceKey = movingPieceInfo.pieceKey;
-                    selectedPieceDisplay.innerHTML = `Moving: <span class="text-2xl ml-2 piece ${pieceKey.startsWith('w') ? 'white' : 'black'}">${PIECE_UNICODE[pieceKey]}</span>`;
-                }
-            }
-            else {
-                if (selectedPalettePiece) {
-                    setupBoardState[squareName] = selectedPalettePiece;
-                    if (selectedPalettePiece.startsWith('w')) {
-                        const rank = parseInt(squareName[1], 10);
-                        const file = squareName[0];
-                        const symRank = 9 - rank;
-                        const symSquare = file + symRank;
-                        const blackPieceKey = 'b' + selectedPalettePiece[1];
-                        if (!setupBoardState[symSquare]) {
-                           setupBoardState[symSquare] = blackPieceKey;
+        
+        function updateBoardFromFen(fen) {
+            try {
+                const tempChess = new Chess(fen);
+                setupBoardState = {};
+                tempChess.board().forEach((row, rowIndex) => {
+                    row.forEach((piece, colIndex) => {
+                        if (piece) {
+                            const squareName = 'abcdefgh'[colIndex] + (8 - rowIndex);
+                            setupBoardState[squareName] = piece.color + piece.type.toUpperCase();
                         }
-                    }
-                } 
-                else if (selectedPalettePiece === null) {
-                    delete setupBoardState[squareName];
-                }
+                    });
+                });
+                renderSetupBoard();
+            } catch (e) {
+                alert("The selected preset has an invalid FEN. Please choose another.");
+                positionSelector.value = "";
             }
-            renderSetupBoard();
         }
-
+        
         function generateFenFromSetup() {
             let fen = '';
             let whiteKing = false;
@@ -681,251 +550,85 @@
             return fen;
         }
 
-        function randomizeBoard() {
-            setupBoardState = {};
-            movingPieceInfo = null;
-            setRepositioning(false);
+        // --- Radial Menu Logic ---
+        function showRadialMenu(x, y, targetSquare) {
+            radialMenu.innerHTML = '';
+            radialMenu.style.display = 'block';
+            radialMenu.style.left = `${x - 75}px`;
+            radialMenu.style.top = `${y - 75}px`;
+            activeRadialTarget = targetSquare;
 
-            const allSquares = [];
-            for (let i = 0; i < 8; i++) {
-                for (let j = 1; j <= 8; j++) {
-                    allSquares.push('abcdefgh'[i] + j);
-                }
-            }
-            allSquares.sort(() => 0.5 - Math.random());
+            const angleStep = 360 / RADIAL_PIECES.length;
+            RADIAL_PIECES.forEach((pieceKey, index) => {
+                const angle = angleStep * index - 90; // Start from top
+                const itemX = 60 * Math.cos(angle * Math.PI / 180);
+                const itemY = 60 * Math.sin(angle * Math.PI / 180);
 
-            setupBoardState[allSquares.pop()] = 'wK';
-            setupBoardState[allSquares.pop()] = 'bK';
+                const item = document.createElement('div');
+                item.className = 'radial-item';
+                item.style.transform = `translate(${itemX}px, ${itemY}px)`;
+                item.dataset.piece = pieceKey;
 
-            const piecePool = [
-                'wQ', 'wR', 'wR', 'wB', 'wB', 'wN', 'wN', 'wP', 'wP', 'wP', 'wP',
-                'bQ', 'bR', 'bR', 'bB', 'bB', 'bN', 'bN', 'bP', 'bP', 'bP', 'bP'
-            ];
-            piecePool.sort(() => 0.5 - Math.random());
-
-            const numAdditionalPieces = 8 + Math.floor(Math.random() * 9);
-            
-            for (let i = 0; i < numAdditionalPieces && allSquares.length > 0 && piecePool.length > 0; i++) {
-                const square = allSquares.pop();
-                let piece = piecePool.pop();
-                const rank = square[1];
-                if ((piece === 'wP' && rank === '8') || (piece === 'bP' && rank === '1')) {
-                    i--; continue;
-                }
-                setupBoardState[square] = piece;
-            }
-
-            renderSetupBoard();
-            selectPalettePiece(null);
-        }
-        
-        async function getFenFromImage(base64ImageData) {
-            lastImageCapture = base64ImageData; // Save for retry
-            const apiKey = apiKeyInput.value;
-            if (!apiKey) {
-                alert("Please enter your Google AI API key to use this feature.");
-                return;
-            }
-
-            setupControls.classList.add('hidden');
-            loadingIndicator.classList.remove('hidden');
-            loadingText.textContent = "Analyzing Image...";
-            retryAnalysisBtn.classList.add('hidden');
-
-            const prompt = "You are a World-Class Chess Engine with perfect vision. Your only task is to analyze the provided image of a chessboard and generate the exact Forsyth-Edwards Notation (FEN) string. **CRITICAL INSTRUCTIONS:** 1. **Analyze from White's Perspective:** The bottom of the image is the 1st rank (a1 is bottom-left). 2. **Identify SOLID PIECES ONLY:** You must identify every single solid, filled-in chess piece. IGNORE ALL other visual elements, including highlighted squares, suggested move arrows, and especially any PIECE OUTLINES (transparent pieces with only a border). These are not real pieces and must be treated as empty squares. 3. **Exact Placement:** Map every solid piece to its precise square (e.g., a white king on e1, a black pawn on d7). 4. **Verification Pass:** Before providing the output, perform a final verification pass. Look at the image one last time and compare it to your generated FEN string. Ensure every solid piece is present and correctly placed. This step is mandatory. 5. **Output Format:** Your response MUST be the raw FEN string and nothing else. Do not add any text, explanations, or markdown. Example: `rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1`";
-            const payload = {
-                contents: [{
-                    role: "user",
-                    parts: [
-                        { text: prompt },
-                        { inlineData: { mimeType: "image/jpeg", data: base64ImageData } }
-                    ]
-                }],
-            };
-            
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-
-            try {
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                if (!response.ok) {
-                    let errorMessage = `API request failed with status ${response.status}.`;
-                    if (response.status === 403) {
-                        errorMessage += " Please check your API key and permissions.";
-                    } else if (response.status === 503) {
-                        errorMessage += " The AI service is temporarily unavailable. Please try again in a few moments.";
-                    }
-                    throw new Error(errorMessage);
-                }
-
-                const result = await response.json();
-                
-                if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts[0].text) {
-                    const rawText = result.candidates[0].content.parts[0].text;
-                    const fenRegex = /([rnbqkp1-8]+\/){7}([rnbqkp1-8]+)\s[wb]\s(-|K?Q?k?q?)\s(-|[a-h][36])\s\d+\s\d+/i;
-                    const match = rawText.match(fenRegex);
-
-                    if (match) {
-                        updateBoardFromFen(match[0]);
-                        loadingIndicator.classList.add('hidden');
-                        setupControls.classList.remove('hidden');
-                    } else {
-                         // Fallback Regex: Look for just the piece placement part.
-                        const piecePlacementRegex = /([rnbqkp1-8]+\/){7}([rnbqkp1-8]+)/i;
-                        const pieceMatch = rawText.match(piecePlacementRegex);
-                        if (pieceMatch) {
-                            // Assume white to move and standard castling/en passant for setup purposes.
-                            const fullFen = `${pieceMatch[0]} w - - 0 1`;
-                            updateBoardFromFen(fullFen);
-                            loadingIndicator.classList.add('hidden');
-                            setupControls.classList.remove('hidden');
-                        } else {
-                            throw new Error("Could not find a valid FEN string in the AI's response. The format was incorrect.");
-                        }
-                    }
+                if (pieceKey) {
+                    item.innerHTML = `<span class="piece ${pieceKey.startsWith('w') ? 'white' : 'black'}">${PIECE_UNICODE[pieceKey]}</span>`;
                 } else {
-                    let errorMessage = "The AI's response was empty or in an unexpected format.";
-                    if(result.promptFeedback && result.promptFeedback.blockReason){
-                        errorMessage += ` Reason: ${result.promptFeedback.blockReason}`;
-                    }
-                    throw new Error(errorMessage);
+                    item.innerHTML = `<span class="text-red-500 text-4xl">×</span>`;
                 }
-            } catch (error) {
-                console.error("Error setting up board from image:", error);
-                loadingText.textContent = `Analysis failed: ${error.message}`;
-                retryAnalysisBtn.classList.remove('hidden');
-            }
+                radialMenu.appendChild(item);
+            });
         }
 
-        function updateBoardFromFen(fen) {
-            try {
-                const tempChess = new Chess(fen);
-                setupBoardState = {};
-                tempChess.board().forEach((row, rowIndex) => {
-                    row.forEach((piece, colIndex) => {
-                        if (piece) {
-                            const squareName = 'abcdefgh'[colIndex] + (8 - rowIndex);
-                            setupBoardState[squareName] = piece.color + piece.type.toUpperCase();
-                        }
-                    });
-                });
+        function hideRadialMenu() {
+            radialMenu.style.display = 'none';
+            activeRadialTarget = null;
+        }
+
+        function handleRadialSelection(selectedPiece) {
+            if (activeRadialTarget) {
+                if (selectedPiece) {
+                    setupBoardState[activeRadialTarget] = selectedPiece;
+                } else {
+                    delete setupBoardState[activeRadialTarget];
+                }
                 renderSetupBoard();
-            } catch (e) {
-                console.error("Invalid FEN received:", fen, e);
-                alert("The AI returned an invalid board position. Please try another image or set up the board manually.");
-            }
-        }
-        
-        async function getCameraStream(deviceId = null) {
-            if (activeStream) {
-                activeStream.getTracks().forEach(track => track.stop());
-            }
-
-            const constraints = {
-                video: {
-                    deviceId: deviceId ? { exact: deviceId } : undefined,
-                    facingMode: deviceId ? undefined : { ideal: 'environment' }
-                }
-            };
-
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia(constraints);
-                activeStream = stream;
-                webcamStream.srcObject = stream;
-                if (!deviceId) {
-                    await populateCameraList();
-                }
-            } catch (err) {
-                console.error("Error accessing webcam:", err);
-                alert("Could not access the webcam. Please ensure you have a webcam and have granted permission.");
-                stopWebcam();
-            }
-        }
-
-        async function populateCameraList() {
-            try {
-                const devices = await navigator.mediaDevices.enumerateDevices();
-                videoDevices = devices.filter(device => device.kind === 'videoinput');
-                if (videoDevices.length > 1) {
-                    switchCameraBtn.classList.remove('hidden');
-                    const currentStreamTrack = activeStream.getVideoTracks()[0];
-                    const currentDeviceId = currentStreamTrack.getSettings().deviceId;
-                    currentCameraIndex = videoDevices.findIndex(device => device.deviceId === currentDeviceId);
-                    if (currentCameraIndex === -1) currentCameraIndex = 0;
-                } else {
-                    switchCameraBtn.classList.add('hidden');
-                }
-            } catch (err) {
-                console.error("Could not enumerate devices:", err);
-            }
-        }
-        
-        async function startWebcam() {
-            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                webcamModal.style.display = 'flex';
-                document.body.classList.add('modal-open');
-                await getCameraStream();
-            } else {
-                alert("Your browser does not support webcam access.");
-            }
-        }
-
-        function stopWebcam() {
-            if (activeStream) {
-                activeStream.getTracks().forEach(track => track.stop());
-                activeStream = null;
-            }
-            webcamModal.style.display = 'none';
-            if (setupModal.classList.contains('opacity-0')) {
-                document.body.classList.remove('modal-open');
-            }
-        }
-        
-        function switchCamera() {
-            if (videoDevices.length > 1) {
-                currentCameraIndex = (currentCameraIndex + 1) % videoDevices.length;
-                getCameraStream(videoDevices[currentCameraIndex].deviceId);
             }
         }
 
         // --- Event Listeners ---
         newGameBtn.addEventListener('click', showSetupModal);
-        
         cancelSetupBtn.addEventListener('click', hideSetupModal);
         
-        changePosBtn.addEventListener('click', () => {
-            setRepositioning(!isRepositioning);
+        setupBoardElement.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            const target = e.target.closest('.square');
+            if(target) {
+                showRadialMenu(e.clientX, e.clientY, target.dataset.square);
+            }
         });
 
-        imageSetupBtn.addEventListener('click', startWebcam);
-        
-        captureBtn.addEventListener('click', () => {
-            webcamCanvas.width = webcamStream.videoWidth;
-            webcamCanvas.height = webcamStream.videoHeight;
-            const context = webcamCanvas.getContext('2d');
-            context.drawImage(webcamStream, 0, 0, webcamCanvas.width, webcamCanvas.height);
-            const base64ImageData = webcamCanvas.toDataURL('image/jpeg').split(',')[1];
-            stopWebcam();
-            getFenFromImage(base64ImageData);
-        });
-        
-        retryAnalysisBtn.addEventListener('click', () => {
-            if (lastImageCapture) {
-                getFenFromImage(lastImageCapture);
+        window.addEventListener('mousemove', (e) => {
+            if (radialMenu.style.display === 'block') {
+                let highlightedItem = null;
+                document.querySelectorAll('.radial-item').forEach(item => {
+                    const rect = item.getBoundingClientRect();
+                    if (e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom) {
+                        item.classList.add('highlighted');
+                        highlightedItem = item;
+                    } else {
+                        item.classList.remove('highlighted');
+                    }
+                });
             }
         });
         
-        switchCameraBtn.addEventListener('click', switchCamera);
-        
-        cancelWebcamBtn.addEventListener('click', stopWebcam);
-
-        saveApiKeyBtn.addEventListener('click', () => {
-            localStorage.setItem('googleAiApiKey', apiKeyInput.value);
-            alert('API Key saved!');
+        window.addEventListener('mouseup', (e) => {
+            if (radialMenu.style.display === 'block') {
+                const highlightedItem = document.querySelector('.radial-item.highlighted');
+                if (highlightedItem) {
+                    handleRadialSelection(highlightedItem.dataset.piece === 'null' ? null : highlightedItem.dataset.piece);
+                }
+                hideRadialMenu();
+            }
         });
 
         colorSelector.addEventListener('click', (e) => {
@@ -938,33 +641,14 @@
 
         clearBoardBtn.addEventListener('click', () => {
             setupBoardState = {};
-            movingPieceInfo = null;
-            setRepositioning(false);
-            selectPalettePiece(null);
             renderSetupBoard();
         });
 
         resetStandardBtn.addEventListener('click', () => {
-            const standardChess = new Chess();
-            setupBoardState = {};
-            movingPieceInfo = null;
-            setRepositioning(false);
-            selectPalettePiece(null);
-            standardChess.board().forEach((row, rowIndex) => {
-                row.forEach((piece, colIndex) => {
-                    if (piece) {
-                        const squareName = 'abcdefgh'[colIndex] + (8 - rowIndex);
-                        setupBoardState[squareName] = piece.color + piece.type.toUpperCase();
-                    }
-                });
-            });
-            renderSetupBoard();
+            updateBoardFromFen('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1');
         });
-        
-        randomizeBtn.addEventListener('click', randomizeBoard);
 
         startGameBtn.addEventListener('click', () => {
-            setRepositioning(false);
             const fen = generateFenFromSetup();
             if (fen) {
                 hideSetupModal();
