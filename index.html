@@ -279,12 +279,6 @@
                 measurementId: "G-PGJ3YNKMVT"
             };
             
-            if (!firebaseConfig.apiKey) {
-                console.warn("Firebase config is missing. Collaborative features will be disabled.");
-                alert("Collaboration is disabled. To enable it, create a Firebase project and paste the configuration object into the code.");
-                return;
-            }
-            
             try {
                 const app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
