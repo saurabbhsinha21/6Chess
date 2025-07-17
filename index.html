@@ -774,7 +774,18 @@
                         loadingIndicator.classList.add('hidden');
                         setupControls.classList.remove('hidden');
                     } else {
-                        throw new Error("Could not find a valid FEN string in the AI's response. The format was incorrect.");
+                         // Fallback Regex: Look for just the piece placement part.
+                        const piecePlacementRegex = /([rnbqkp1-8]+\/){7}([rnbqkp1-8]+)/i;
+                        const pieceMatch = rawText.match(piecePlacementRegex);
+                        if (pieceMatch) {
+                            // Assume white to move and standard castling/en passant for setup purposes.
+                            const fullFen = `${pieceMatch[0]} w - - 0 1`;
+                            updateBoardFromFen(fullFen);
+                            loadingIndicator.classList.add('hidden');
+                            setupControls.classList.remove('hidden');
+                        } else {
+                            throw new Error("Could not find a valid FEN string in the AI's response. The format was incorrect.");
+                        }
                     }
                 } else {
                     let errorMessage = "The AI's response was empty or in an unexpected format.";
