@@ -307,7 +307,6 @@
             if (moves.length === 0) return;
 
             let bestMove = null;
-            let bestScore = -Infinity;
             const isMaximizing = chess.turn() === 'w';
             let bestValue = isMaximizing ? -Infinity : Infinity;
             const depth = 3;
@@ -408,12 +407,12 @@
             setupBoardState = {};
             renderSetupBoard();
             populateLabels('setup-rank-labels', 'setup-file-labels');
-            setupModal.classList.remove('opacity-0', 'pointer-events-none');
+            setupModal.classList.remove('hidden');
         }
 
         function hideSetupModal() {
             document.body.classList.remove('modal-open');
-            setupModal.classList.add('opacity-0', 'pointer-events-none');
+            setupModal.classList.add('hidden');
         }
 
         function renderSetupBoard() {
@@ -591,9 +590,8 @@
             const fen = generateFenFromSetup();
             if (fen) {
                 hideSetupModal();
-                chess = new Chess(fen); // THIS IS THE FIX
+                chess = new Chess(fen);
                 
-                // Reset game state variables
                 selectedSquare = null;
                 whiteMoves = 6;
                 blackMoves = 6;
@@ -601,7 +599,6 @@
                 blackScore = 0;
                 gameOver = false;
 
-                // Update UI
                 whiteMovesElement.textContent = whiteMoves;
                 blackMovesElement.textContent = blackMoves;
                 whiteScoreElement.textContent = whiteScore;
@@ -619,7 +616,7 @@
         });
 
         // --- Initial Load ---
-        renderBoard('chess-board', new Chess()); // Render standard board initially
+        renderBoard('chess-board', new Chess());
         populateLabels('main-rank-labels', 'main-file-labels');
     </script>
 </body>
