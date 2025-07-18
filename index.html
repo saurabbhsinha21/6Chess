@@ -485,6 +485,35 @@
             gameStatusElement.textContent = status;
         }
 
+        function resetGame(fen) {
+            const valid = chess.load(fen);
+            if (!valid) {
+                alert("There was an error starting the game with the custom position. Please try again.");
+                return;
+            }
+            
+            selectedSquare = null;
+            whiteMoves = 6;
+            blackMoves = 6;
+            whiteScore = 0;
+            blackScore = 0;
+            gameOver = false;
+
+            whiteMovesElement.textContent = whiteMoves;
+            blackMovesElement.textContent = blackMoves;
+            whiteScoreElement.textContent = whiteScore;
+            blackScoreElement.textContent = blackScore;
+            lastMoveElement.textContent = '--';
+            
+            renderBoard();
+            updateGameStatus();
+
+            if (chess.turn() !== playerColor && !gameOver) {
+                gameStatusElement.textContent = "AI is thinking...";
+                window.setTimeout(makeAIMove, 250);
+            }
+        }
+
         // --- Board Setup Logic ---
 
         async function showSetupModal() {
