@@ -486,9 +486,8 @@
         }
 
         function resetGame(fen) {
-            try {
-                chess = new Chess(fen); // Re-initialize with the new FEN.
-            } catch (e) {
+            const valid = chess.load(fen);
+            if (!valid) {
                 alert("There was an error starting the game with the custom position. Please try again.");
                 return;
             }
