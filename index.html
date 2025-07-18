@@ -485,36 +485,6 @@
             gameStatusElement.textContent = status;
         }
 
-        function resetGame(fen) {
-            try {
-                chess.load(fen);
-            } catch (e) {
-                alert("Invalid board position. Please ensure the setup is legal.");
-                return;
-            }
-            
-            selectedSquare = null;
-            whiteMoves = 6;
-            blackMoves = 6;
-            whiteScore = 0;
-            blackScore = 0;
-            gameOver = false;
-
-            whiteMovesElement.textContent = whiteMoves;
-            blackMovesElement.textContent = blackMoves;
-            whiteScoreElement.textContent = whiteScore;
-            blackScoreElement.textContent = blackScore;
-            lastMoveElement.textContent = '--';
-            
-            renderBoard();
-            updateGameStatus();
-
-            if (chess.turn() !== playerColor && !gameOver) {
-                gameStatusElement.textContent = "AI is thinking...";
-                window.setTimeout(makeAIMove, 250);
-            }
-        }
-
         // --- Board Setup Logic ---
 
         async function showSetupModal() {
