@@ -381,10 +381,10 @@
 
         function updateGameStatus() {
             let status = '';
-            if (chess.isCheckmate()) {
+            if (chess.in_checkmate()) {
                 status = `Checkmate! ${chess.turn() === 'w' ? 'Black' : 'White'} wins.`;
                 gameOver = true;
-            } else if (chess.isDraw() || chess.isStalemate() || chess.isThreefoldRepetition()) {
+            } else if (chess.in_draw() || chess.in_stalemate() || chess.in_threefold_repetition()) {
                 status = 'Game over: Draw.';
                 gameOver = true;
             } else if (whiteMoves <= 0 && blackMoves <= 0) {
@@ -396,7 +396,7 @@
                 const turnColor = chess.turn() === 'w' ? 'White' : 'Black';
                 const playerIdentifier = chess.turn() === playerColor ? '(Your Turn)' : '(AI\'s Turn)';
                 status = `${turnColor}'s Turn ${playerIdentifier}`;
-                if(chess.inCheck()) status += ' (Check)';
+                if(chess.in_check()) status += ' (Check)';
             }
             gameStatusElement.textContent = status;
         }
