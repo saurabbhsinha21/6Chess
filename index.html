@@ -485,14 +485,7 @@
             gameStatusElement.textContent = status;
         }
 
-        function resetGame(fen) {
-            try {
-                chess = new Chess(fen);
-            } catch (e) {
-                alert("Invalid board position. Please ensure the setup is legal.");
-                return;
-            }
-            
+        function resetGameUI() {
             selectedSquare = null;
             whiteMoves = 6;
             blackMoves = 6;
@@ -506,7 +499,7 @@
             blackScoreElement.textContent = blackScore;
             lastMoveElement.textContent = '--';
             
-            renderBoard();
+            renderBoard(); // Re-render the main board with the new state
             updateGameStatus();
 
             if (chess.turn() !== playerColor && !gameOver) {
