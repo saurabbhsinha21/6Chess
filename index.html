@@ -37,6 +37,7 @@
         .light { background-color: #f0d9b5; }
         .dark { background-color: #b58863; }
         .selected { box-shadow: inset 0 0 0 4px #4f46e5; }
+        .last-move-highlight { background-color: rgba(252, 211, 77, 0.5) !important; }
         .possible-move::after {
             content: '';
             display: block;
@@ -251,6 +252,7 @@
         let whiteScore = 0;
         let blackScore = 0;
         let gameOver = true;
+        let lastMove = null;
 
         // --- Setup State ---
         let setupBoardState = {};
@@ -367,6 +369,10 @@
                     squareEl.id = squareName;
                     squareEl.className = `square ${(i + j) % 2 === 0 ? 'light' : 'dark'}`;
                     
+                    if (lastMove && (squareName === lastMove.from || squareName === lastMove.to)) {
+                        squareEl.classList.add('last-move-highlight');
+                    }
+
                     const piece = board[i][j];
                     if (piece) {
                         const pieceElement = document.createElement('span');
@@ -407,6 +413,7 @@
         }
         
         function handleMove(move) {
+            lastMove = { from: move.from, to: move.to };
             updateScore(move);
             updateMovesCount();
             lastMoveElement.textContent = move.san;
@@ -500,17 +507,13 @@
 
             const result = chess.move(bestMove);
             if(result) {
-                updateScore(result);
-                updateMovesCount();
-                lastMoveElement.textContent = result.san;
-                renderBoard();
-                updateGameStatus();
+                handleMove(result);
             }
         }
 
         function updateScore(move) {
             if (move.captured) {
-                const pieceValue = PIECE_VALUES[move.captured];
+                const pieceValue = PIECE_VALUES[move.captured.toLowerCase()];
                 if (move.color === 'w') {
                     whiteScore += pieceValue;
                 } else {
@@ -563,6 +566,7 @@
             whiteScore = 0;
             blackScore = 0;
             gameOver = false;
+            lastMove = null;
 
             whiteMovesElement.textContent = whiteMoves;
             blackMovesElement.textContent = blackMoves;
