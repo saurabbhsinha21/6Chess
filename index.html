@@ -188,8 +188,8 @@
                         <div>
                             <h3 class="text-xl font-semibold mb-2">Play As</h3>
                             <div id="color-selector" class="flex bg-gray-900 rounded-lg p-1">
-                                <button data-color="w" class="color-selector-btn w-1/2 py-2 rounded-md text-gray-300 active-color-btn">White</button>
-                                <button data-color="b" class="color-selector-btn w-1/2 py-2 rounded-md text-gray-300">Black</button>
+                                <button data-color="w" class="w-1/2 py-2 rounded-md text-white bg-indigo-600">White</button>
+                                <button data-color="b" class="w-1/2 py-2 rounded-md text-gray-300">Black</button>
                             </div>
                         </div>
 
@@ -226,7 +226,7 @@
         
         // Modal elements
         const setupModal = document.getElementById('setup-modal');
-        const modalContent = document.getElementById('modal-content'); // This was missing
+        const modalContent = document.getElementById('modal-content');
         const colorSelector = document.getElementById('color-selector');
         const startGameBtn = document.getElementById('start-game-btn');
         const clearBoardBtn = document.getElementById('clear-board-btn');
@@ -850,10 +850,15 @@
         });
 
         colorSelector.addEventListener('click', (e) => {
-            if (e.target.tagName === 'BUTTON') {
-                playerColor = e.target.dataset.color;
-                document.querySelectorAll('#color-selector button').forEach(btn => btn.classList.remove('active-color-btn'));
-                e.target.classList.add('active-color-btn');
+            const button = e.target.closest('button');
+            if (button) {
+                playerColor = button.dataset.color;
+                document.querySelectorAll('#color-selector button').forEach(btn => {
+                    btn.classList.remove('bg-indigo-600', 'text-white');
+                    btn.classList.add('text-gray-300');
+                });
+                button.classList.add('bg-indigo-600', 'text-white');
+                button.classList.remove('text-gray-300');
             }
         });
 
