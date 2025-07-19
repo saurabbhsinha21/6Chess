@@ -212,7 +212,7 @@
         // --- Firebase Imports ---
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot, addDoc, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- DOM Elements ---
         const boardElement = document.getElementById('chess-board');
@@ -764,10 +764,11 @@
             if (unsubscribeFromSession) unsubscribeFromSession();
             
             try {
-                const docRef = await addDoc(collection(db, "sessions"), {
-                    boardState: {}
-                });
-                currentSessionId = docRef.id;
+                const newId = String(Math.floor(1000 + Math.random() * 9000));
+                const sessionRef = doc(db, "sessions", newId);
+                await setDoc(sessionRef, { boardState: {} });
+
+                currentSessionId = newId;
                 sessionIdDisplay.textContent = currentSessionId;
                 listenToSession(currentSessionId);
             } catch (e) {
