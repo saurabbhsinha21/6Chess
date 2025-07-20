@@ -118,6 +118,13 @@
             <h2 class="text-2xl font-bold border-b-2 border-gray-600 pb-2 mb-4">Game Info</h2>
             
             <div class="space-y-4">
+                 <div>
+                    <h3 class="text-lg font-semibold">Time Remaining</h3>
+                    <div class="flex justify-between bg-gray-700 p-3 rounded-lg">
+                        <span>White: <strong id="white-timer" class="text-2xl">30</strong>s</span>
+                        <span>Black: <strong id="black-timer" class="text-2xl">30</strong>s</span>
+                    </div>
+                </div>
                 <div>
                     <h3 class="text-lg font-semibold">Moves Remaining</h3>
                     <div class="flex justify-between bg-gray-700 p-3 rounded-lg">
@@ -212,7 +219,7 @@
         // --- Firebase Imports ---
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, onSnapshot, addDoc, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- DOM Elements ---
         const boardElement = document.getElementById('chess-board');
@@ -224,6 +231,8 @@
         const blackScoreElement = document.getElementById('black-score');
         const lastMoveElement = document.getElementById('last-move');
         const newGameBtn = document.getElementById('new-game-btn');
+        const whiteTimerElement = document.getElementById('white-timer');
+        const blackTimerElement = document.getElementById('black-timer');
         
         // Modal elements
         const setupModal = document.getElementById('setup-modal');
@@ -253,6 +262,10 @@
         let blackScore = 0;
         let gameOver = true;
         let lastMove = null;
+        let moveTimer = null;
+        let whiteTime = 30;
+        let blackTime = 30;
+        let aiWorker;
 
         // --- Setup State ---
         let setupBoardState = {};
@@ -413,6 +426,7 @@
         }
         
         function handleMove(move) {
+            stopTimer();
             lastMove = { from: move.from, to: move.to };
             updateScore(move);
             updateMovesCount();
@@ -421,8 +435,11 @@
             updateGameStatus();
 
             if (!gameOver) {
-                gameStatusElement.textContent = "AI is thinking...";
-                window.setTimeout(makeAIMove, 250);
+                startTimer();
+                if (chess.turn() !== playerColor) {
+                    gameStatusElement.textContent = "AI is thinking...";
+                    makeAIMove();
+                }
             }
         }
         
@@ -449,18 +466,21 @@
             return totalEvaluation;
         }
 
-        function minimax(game, depth, alpha, beta, maximizingPlayer) {
+        function minimax(game, depth, alpha, beta, maximizingPlayer, startTime, timeLimit) {
+            if (Date.now() - startTime > timeLimit) {
+                throw 'Timeout';
+            }
+
             if (depth === 0 || game.game_over()) {
                 return evaluateBoard(game.board());
             }
 
             const moves = game.moves();
-
             if (maximizingPlayer) {
                 let maxEval = -Infinity;
                 for (const move of moves) {
                     game.move(move);
-                    const evaluation = minimax(game, depth - 1, alpha, beta, false);
+                    const evaluation = minimax(game, depth - 1, alpha, beta, false, startTime, timeLimit);
                     game.undo();
                     maxEval = Math.max(maxEval, evaluation);
                     alpha = Math.max(alpha, evaluation);
@@ -471,7 +491,7 @@
                 let minEval = Infinity;
                 for (const move of moves) {
                     game.move(move);
-                    const evaluation = minimax(game, depth - 1, alpha, beta, true);
+                    const evaluation = minimax(game, depth - 1, alpha, beta, true, startTime, timeLimit);
                     game.undo();
                     minEval = Math.min(minEval, evaluation);
                     beta = Math.min(beta, evaluation);
@@ -481,34 +501,77 @@
             }
         }
 
+        function findBestMove(game, depth, startTime, timeLimit) {
+            const moves = game.moves();
+            let bestMove = null;
+            const isMaximizing = game.turn() === 'w';
+            let bestValue = isMaximizing ? -Infinity : Infinity;
+
+            for (const move of moves) {
+                if (Date.now() - startTime > timeLimit) throw 'Timeout';
+                
+                game.move(move);
+                const boardValue = minimax(game, depth - 1, -Infinity, Infinity, !isMaximizing, startTime, timeLimit);
+                game.undo();
+
+                if (isMaximizing) {
+                    if (boardValue > bestValue) {
+                        bestValue = boardValue;
+                        bestMove = move;
+                    }
+                } else {
+                    if (boardValue < bestValue) {
+                        bestValue = boardValue;
+                        bestMove = move;
+                    }
+                }
+            }
+            return bestMove;
+        }
+
         function makeAIMove() {
             if (gameOver || chess.turn() === playerColor) return;
 
             const moves = chess.moves();
             if (moves.length === 0) return;
 
-            let bestMove = null;
-            const isMaximizing = chess.turn() === 'w';
-            let bestValue = isMaximizing ? -Infinity : Infinity;
-            const depth = 3;
+            const startTime = Date.now();
+            const timeLimit = 15000; // 15 seconds
+            let bestMove = moves[0]; // Start with a default move
+            let currentDepth = 1;
 
-            for (const move of moves) {
-                chess.move(move);
-                const boardValue = minimax(chess, depth - 1, -Infinity, Infinity, !isMaximizing);
-                chess.undo();
-
-                if (isMaximizing ? (boardValue > bestValue) : (boardValue < bestValue)) {
-                    bestValue = boardValue;
-                    bestMove = move;
+            setTimeout(() => {
+                try {
+                    for (let depth = 1; depth <= 10; depth++) { 
+                        currentDepth = depth;
+                        const gameCopy = new Chess(chess.fen()); 
+                        const bestMoveAtDepth = findBestMove(gameCopy, depth, startTime, timeLimit);
+                        if (bestMoveAtDepth) {
+                             bestMove = bestMoveAtDepth;
+                        }
+                        if (Date.now() - startTime > timeLimit - 500) {
+                             console.log(`Approaching time limit, stopping search at depth ${depth}.`);
+                             break;
+                        }
+                    }
+                } catch (e) {
+                    if (e === 'Timeout') {
+                        console.log(`Search timed out at depth ${currentDepth}. Using best move from depth ${currentDepth > 1 ? currentDepth - 1 : 1}.`);
+                    } else {
+                        throw e;
+                    }
                 }
-            }
-            
-            if (!bestMove) bestMove = moves[Math.floor(Math.random() * moves.length)];
 
-            const result = chess.move(bestMove);
-            if(result) {
-                handleMove(result);
-            }
+                const result = chess.move(bestMove);
+                if (result) {
+                    handleMove(result);
+                } else {
+                    const fallbackMove = chess.moves()[0];
+                    if (fallbackMove) {
+                        handleMove(chess.move(fallbackMove));
+                    }
+                }
+            }, 100);
         }
 
         function updateScore(move) {
@@ -533,14 +596,15 @@
 
         function updateGameStatus() {
             let status = '';
+            let isGameOver = false;
             if (chess.in_checkmate()) {
                 status = `Checkmate! ${chess.turn() === 'w' ? 'Black' : 'White'} wins.`;
-                gameOver = true;
+                isGameOver = true;
             } else if (chess.in_draw() || chess.in_stalemate() || chess.in_threefold_repetition()) {
                 status = 'Game over: Draw.';
-                gameOver = true;
+                isGameOver = true;
             } else if (whiteMoves <= 0 && blackMoves <= 0) {
-                 gameOver = true;
+                 isGameOver = true;
                  if (whiteScore > blackScore) status = "Game Over! White wins on points.";
                  else if (blackScore > whiteScore) status = "Game Over! Black wins on points.";
                  else status = "Game Over! It's a draw on points.";
@@ -551,6 +615,45 @@
                 if(chess.in_check()) status += ' (Check)';
             }
             gameStatusElement.textContent = status;
+            if(isGameOver) {
+                gameOver = true;
+                stopTimer();
+            }
+        }
+
+        function startTimer() {
+            stopTimer(); 
+            if (chess.turn() === 'w') {
+                whiteTime = 30;
+                whiteTimerElement.textContent = '30';
+            } else {
+                blackTime = 30;
+                blackTimerElement.textContent = '30';
+            }
+
+            moveTimer = setInterval(() => {
+                if (chess.turn() === 'w') {
+                    whiteTime--;
+                    whiteTimerElement.textContent = `${whiteTime}`;
+                    if (whiteTime <= 0) {
+                        gameStatusElement.textContent = "Black wins on time!";
+                        gameOver = true;
+                        stopTimer();
+                    }
+                } else {
+                    blackTime--;
+                    blackTimerElement.textContent = `${blackTime}`;
+                    if (blackTime <= 0) {
+                        gameStatusElement.textContent = "White wins on time!";
+                        gameOver = true;
+                        stopTimer();
+                    }
+                }
+            }, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(moveTimer);
         }
 
         function resetGame(fen) {
@@ -567,19 +670,14 @@
             blackScore = 0;
             gameOver = false;
             lastMove = null;
-
-            whiteMovesElement.textContent = whiteMoves;
-            blackMovesElement.textContent = blackMoves;
-            whiteScoreElement.textContent = whiteScore;
-            blackScoreElement.textContent = blackScore;
-            lastMoveElement.textContent = '--';
             
             renderBoard();
             updateGameStatus();
+            startTimer();
 
             if (chess.turn() !== playerColor && !gameOver) {
                 gameStatusElement.textContent = "AI is thinking...";
-                window.setTimeout(makeAIMove, 250);
+                makeAIMove();
             }
         }
 
